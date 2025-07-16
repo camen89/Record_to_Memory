@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record & Print</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="m02s_print.js"></script>
+</head>
+
+<body>
+    <h1>Record to Memory Box</h1>
+    <video id="camera" autoplay muted playsinline></video>
+
+    <!-- Canvasサイズ調整UI -->
+    <div style="text-align:center; margin: 10px;">
+        <label>Canvas Width (px): <input type="number" id="canvasWidthInput" value="288" min="50" max="576"></label>
+        <button onclick="resizeCanvas()">Resize Canvas</button>
+    </div>
+
+    <canvas id="resultCanvas"></canvas>
+
+    <div>
+        <button id="button" onclick="takePhoto()">Take Photo</button>
+        <button onclick="printCanvas()">Print</button>
+    </div>
+
+    <p class="text" id="date">Date :</p>
+    <p class="text" id="place">Place : Tama Art University Information Design Building 1F</p>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
