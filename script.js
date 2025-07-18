@@ -29,7 +29,7 @@ function resizeCanvas() {
     }
 
     const canvas = document.getElementById('resultCanvas');
-    const aspectRatio = 4 / 5;
+    const aspectRatio = 2 / 3; // 縦長アスペクト比 (横2:縦3)
     canvas.width = width;
     canvas.height = Math.round(width / aspectRatio);
 
@@ -50,19 +50,37 @@ function takePhoto() {
         return;
     }
 
-    // カメラのアスペクト比を取得
-    const aspectRatio = video.videoWidth / video.videoHeight;
-
-    // 入力で指定された幅に合わせて高さを自動計算
+    // 指定幅・縦長比率でcanvas設定
     const widthInput = document.getElementById('canvasWidthInput');
     const targetWidth = parseInt(widthInput.value, 10);
-    const targetHeight = Math.round(targetWidth / aspectRatio);
+    const targetHeight = Math.round(targetWidth / (2 / 3)); // 縦長 2:3
 
     canvas.width = targetWidth;
     canvas.height = targetHeight;
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // 中央トリミング
+    const videoAspect = video.videoWidth / video.videoHeight;
+    const targetAspect = 2 / 3;
 
+    let sx, sy, sWidth, sHeight;
+
+    if (videoAspect > targetAspect) {
+        // カメラ映像が横長 → 横をカット
+        sHeight = video.videoHeight;
+        sWidth = video.videoHeight * targetAspect;
+        sx = (video.videoWidth - sWidth) / 2;
+        sy = 0;
+    } else {
+        // カメラ映像が縦長 → 縦をカット
+        sWidth = video.videoWidth;
+        sHeight = video.videoWidth / targetAspect;
+        sx = 0;
+        sy = (video.videoHeight - sHeight) / 2;
+    }
+
+    ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+
+    // グレースケール ＋ エラーディフュージョン
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const gray = toGrayscale(imgData.data, canvas.width, canvas.height);
     const result = errorDiffusion1CH(gray, canvas.width, canvas.height);
@@ -76,10 +94,10 @@ function takePhoto() {
     }
     ctx.putImageData(outputData, 0, 0);
 
+    // 日付更新
     const now = new Date();
     dateP.textContent = `Date : ${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 }
-
 
 function toGrayscale(array, width, height) {
     const output = new Uint8Array(width * height);
@@ -114,25 +132,15 @@ function errorDiffusion1CH(u8array, width, height) {
 }
 
 function printCanvas() {
-    print(); // m02s_print.js にある印刷関数
-}
-
-
-///////////////////////
-function printCanvas() {
     const originalCanvas = document.getElementById('resultCanvas');
     const dateText = document.getElementById('date').textContent;
     const placeText = document.getElementById('place').textContent;
 
-    // 印刷用Canvas作成
     const printCanvas = document.createElement('canvas');
     const ctx = printCanvas.getContext('2d');
 
-    // フォントサイズなど設定
-    // const headerFontSize = 16;
-    // const footerFontSize = 14;
-    const headerFontSize = 26; // ← 上部タイトル・メッセージのフォントサイズ
-    const footerFontSize = 24; // ← 下部 日付・場所のフォントサイズ
+    const headerFontSize = 26;
+    const footerFontSize = 24;
     const margin = 20;
 
     ctx.font = `${headerFontSize}px sans-serif`;
@@ -142,26 +150,21 @@ function printCanvas() {
     printCanvas.width = originalCanvas.width;
     printCanvas.height = headerHeight + originalCanvas.height + footerHeight;
 
-    // 背景を白に
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, printCanvas.width, printCanvas.height);
 
-    // 上部テキスト
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
     ctx.font = `${headerFontSize}px sans-serif`;
     ctx.fillText('Record to Memory Box', printCanvas.width / 2, headerFontSize);
     ctx.fillText('記録を記憶に', printCanvas.width / 2, headerFontSize * 2);
 
-    // 撮影画像 (中央)
     ctx.drawImage(originalCanvas, 0, headerHeight);
 
-    // 下部テキスト
     ctx.font = `${footerFontSize}px sans-serif`;
     ctx.textAlign = 'left';
     ctx.fillText(dateText, 10, headerHeight + originalCanvas.height + footerFontSize);
     ctx.fillText(placeText, 10, headerHeight + originalCanvas.height + footerFontSize * 2);
 
-    // 印刷関数呼び出し（m02s_print.js）
-    printFromCanvas(printCanvas);
+    printFromCanvas(printCanvas); // m02s_print.js にある関数
 }
